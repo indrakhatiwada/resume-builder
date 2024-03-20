@@ -137,9 +137,9 @@ export const {
 
 export const selectSettings = (state: RootState) => state.settings;
 
-export const selectThemeColor = (state: RootState) => state.themeColor;
-export const selectFontFamily = (state: RootState) => state.fontFamily;
-export const selectFontSize = (state: RootState) => state.fontSize;
+export const selectThemeColor = (state: RootState) => state.settings.themeColor;
+export const selectFontFamily = (state: RootState) => state.settings.fontFamily;
+export const selectFontSize = (state: RootState) => state.settings.fontSize;
 export const selectFormToShow = (state: RootState) => state.settings.formToShow;
 export const selectFormToHeading = (state: RootState) =>
   state.settings.formToHeading;
