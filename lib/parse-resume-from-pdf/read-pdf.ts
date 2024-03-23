@@ -1,57 +1,53 @@
-import { TextItems } from "./types";
-import * as pdfjs from "pdfjs-dist"
-import type { TextItem  as PdfjsTextItem} from "pdfjs-dist/types/src/display/api";}
+import { TextItem, TextItems } from "./types";
+import * as pdfjs from "pdfjs-dist";
+import type { TextItem as PdfjsTextItem } from "pdfjs-dist/types/src/display/api";
 
+export const readPdf = async (fileUrl: string): Promise<TextItems> => {
+  const pdffile = await pdfjs.getDocument(fileUrl).promise;
+  let textItems: TextItems = [];
 
+  for (let i = 1; i <= pdffile.numPages; i++) {
+    const page = await pdffile.getPage(i);
+    const textContent = await page.getTextContent();
+    await page.getOperatorList();
 
-export const readPdf = async (fileUrl: string) : Promise <TextItems> =>{
+    const commonObjs = page.commonObjs;
 
-    const pdffile = await pdfjs.getDocument(fileUrl).promise;
-    let textItems: TextItems = [];
+    const pageTextItems = textContent.items.map((item) => {
+      const {
+        str: text,
+        dir,
+        transform,
+        fontName: pdfFontName,
+        ...otherProps
+      } = item as PdfjsTextItem;
 
+      const x = transform[4];
+      const y = transform[5];
 
-    for (let i=1; i<=pdffile.numPages; i++){
-        const page = await pdffile.getPage(i);
-       const textContent = await page.getTextContent();
-       await page.getOperatorList();
+      const fontObj = commonObjs.get(pdfFontName);
+      const fontName = fontObj?.name;
 
-       const commonObjs = page.commonObjs;
+      const newText = text.replace(/--/g, "—");
 
+      const newItem = {
+        ...otherProps,
+        fontName,
+        text: newText,
+        x,
+        y,
+      };
 
-       const pageTextItems = textContent.items.map((item) => {
-        const {str:text,
-            dir,
-            transform,
-            fontName: pdfFontName,
-            ...otherProps
-        } = item as PdfjsTextItem;
+      return newItem;
+    });
 
-        const x = transform[4];
-        const y = transform[5];
+    textItems.push(...pageTextItems);
+  }
 
-        const fontObj = commonObjs.get(pdfFontName);
-        const  fontName = fontObj?.name;
+  const isEmptySpace = (textItem: TextItem) =>
+    !textItem.hasEOL && textItem?.text.trim() === "";
 
-        const newText = text.replace(/--/g, "—");
+  textItems = textItems.filter((textItem) => !isEmptySpace(textItem));
 
-        const newItem = {
-            ...otherProps,
-             fontName,
-             text: newText,
-             x,
-             y,
-
-        }
-
-        return newItem
-
-       })
-
-       textItems.push(...pageTextItems);
-
-    
-    }
-
-    const isEmptySpace = (textItem: TextItem) => !textItem.hasEOL && textItem?.text.trim() === "";
-
-}
+  return textItems;
+};
